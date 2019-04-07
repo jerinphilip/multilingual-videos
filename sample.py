@@ -7,51 +7,6 @@ from PIL import ImageFont, ImageDraw, Image
 
 import sys
 import os
-
-ROOT = os.path.dirname(__file__)
-ROOT = os.path.join(ROOT, '..')
-CRNN = os.path.join(ROOT, 'crnn.pytorch')
-sys.path.insert(0, CRNN)
-
-CTPN = os.path.join(ROOT, 'text-detection-ctpn')
-sys.path.insert(0, CTPN)
-
-EAST = os.path.join(ROOT, 'EAST')
-sys.path.insert(0, EAST)
-
-GINP = os.path.join(ROOT,  'generative_inpainting')
-sys.path.insert(0, GINP)
-
-from ctpn import CTPNWrapper
-
-ctpnw = CTPNWrapper(
-    checkpoint_path='/ssd_scratch/cvit/jerin/acl-workspace/checkpoints_mlt/'
-)
-
-from east import EASTWrapper
-eastw = EASTWrapper(
-    checkpoint_path='/ssd_scratch/cvit/jerin/acl-workspace/east_icdar2015_resnet_v1_50_rbox/'
-)
-
-from crnn import CRNNWrapper
-crnnw = CRNNWrapper(
-    model_path = '/ssd_scratch/cvit/jerin/acl-workspace/crnn.pth',
-    alphabet = '0123456789abcdefghijklmnopqrstuvwxyz'
-)
-
-from ginp.wrapper import GInpWrapper
-ginpw =  GInpWrapper(
-    checkpoint_dir='/ssd_scratch/cvit/jerin/acl-workspace/release_imagenet_256',
-)
-
-import ilmulti
-translator = ilmulti.translator.pretrained.mm_all()
-
-
-parser = ArgumentParser()
-parser.add_argument('--path', required=True, type=str)
-args = parser.parse_args()
-
 from utils import get_iou
 
 def collect(bboxes, ctpn_bboxes, texts, logfile=sys.stdout):
@@ -90,8 +45,6 @@ def collect(bboxes, ctpn_bboxes, texts, logfile=sys.stdout):
         #     text = datum['text']
         #     print('{}:{}, {}:{} \t {}'.format(bbox.y, bbox.Y, bbox.x, bbox.X, text))
     return groups, translations
-
-
 
 def f(counter, frame):
     _image, ctpn_bboxes = ctpnw.predict(frame)
@@ -136,6 +89,8 @@ def f(counter, frame):
 
     return frame
 
+ROOT = os.path.dirname(__file__)
+ROOT = os.path.join(ROOT, '..')
 fonts_dir = os.path.join(ROOT, 'fonts')
 font_path = os.path.join(fonts_dir, "NotoSerifDevanagari-Regular.ttf")
 print(font_path)
@@ -150,31 +105,77 @@ def write_text(image, bbox, translation):
     return image
     pass
 
+if __name__ == '__main__':
+    CRNN = os.path.join(ROOT, 'crnn.pytorch')
+    sys.path.insert(0, CRNN)
 
-# frame = cv2.imread(args.path)
-# f(frame)
+    CTPN = os.path.join(ROOT, 'text-detection-ctpn')
+    sys.path.insert(0, CTPN)
 
-capture = cv2.VideoCapture(args.path)
-counter = 1
-annotations = []
-while(capture.isOpened()):
-    return_code, frame = capture.read()
-    fname = os.path.join('/ssd_scratch/cvit/jerin/acl-temp/', 
-                '{}.jpg'.format(counter)
-            )
-    # cv2.imwrite(fname, image)
-    # print("New", counter, bboxes)
-    SAMPLE = 120
-    if counter % SAMPLE == 0:
-        if frame is not None:
-            frame = f(counter, frame)
-            # print(frame)
-            cv2.imwrite("/ssd_scratch/cvit/jerin/acl-temp/dec-{}.jpg".format(counter),
-                    frame)
-        else:
-            break
+    EAST = os.path.join(ROOT, 'EAST')
+    sys.path.insert(0, EAST)
 
-    counter = counter + 1
+    GINP = os.path.join(ROOT,  'generative_inpainting')
+    sys.path.insert(0, GINP)
+
+    from ctpn import CTPNWrapper
+    from east import EASTWrapper
+    from crnn import CRNNWrapper
+    from ginp.wrapper import GInpWrapper
+    import ilmulti
+
+    ctpnw = CTPNWrapper(
+        checkpoint_path='/ssd_scratch/cvit/jerin/acl-workspace/checkpoints_mlt/'
+    )
+
+    eastw = EASTWrapper(
+        checkpoint_path='/ssd_scratch/cvit/jerin/acl-workspace/east_icdar2015_resnet_v1_50_rbox/'
+    )
+
+    crnnw = CRNNWrapper(
+        model_path = '/ssd_scratch/cvit/jerin/acl-workspace/crnn.pth',
+        alphabet = '0123456789abcdefghijklmnopqrstuvwxyz'
+    )
+
+    ginpw =  GInpWrapper(
+        checkpoint_dir='/ssd_scratch/cvit/jerin/acl-workspace/release_imagenet_256',
+    )
+
+    translator = ilmulti.translator.pretrained.mm_all()
+
+
+    parser = ArgumentParser()
+    parser.add_argument('--path', required=True, type=str)
+    args = parser.parse_args()
+    capture = cv2.VideoCapture(args.path)
+    counter = 1
+    annotations = []
+    while(capture.isOpened()):
+        return_code, frame = capture.read()
+        fname = os.path.join('/ssd_scratch/cvit/jerin/acl-temp/', 
+                    '{}.jpg'.format(counter)
+                )
+        # cv2.imwrite(fname, image)
+        # print("New", counter, bboxes)
+        SAMPLE = 120
+        if counter % SAMPLE == 0:
+            if frame is not None:
+                frame = f(counter, frame)
+                # print(frame)
+                cv2.imwrite("/ssd_scratch/cvit/jerin/acl-temp/dec-{}.jpg".format(counter),
+                        frame)
+            else:
+                break
+
+        counter = counter + 1
+
+
+
+
+
+
+
+
 
 
 
