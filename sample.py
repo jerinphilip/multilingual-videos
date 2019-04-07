@@ -54,35 +54,6 @@ args = parser.parse_args()
 
 from utils import get_iou
 
-class Strategy:
-    def __init__(self,
-            group_bbox_detector, unit_bbox_detector,
-            text_recognizer, translator, inpainter, image_renderer
-        ):
-        self.group_bbox_detector = group_bbox_detector
-        self.unit_bbox_detector = unit_bbox_detector
-        self.translator = translator
-        self.inpainter = inpainter
-        self.image_renderer = image_renderer
-        self.text_recognizer = text_recognizer
-
-    def process(self, image):
-        # Collect first set of boxes.
-
-        group_boxes = self.group_bbox_detector(image)
-        unit_boxes = self.unit_bbox_detector(image)
-        texts = self.detect_texts(image, unit_boxes)
-        ds = self._collect(group_boxes, unit_boxes, texts)
-
-    def detect_texts(self, image, unit_boxes):
-        texts = []
-        for i, bbox in enumerate(unit_boxes):
-            cropped = image[bbox.y:bbox.Y, bbox.x:bbox.X, :]
-            text = crnnw.predict(cropped)
-            texts.append(text)
-        return texts
-
-
 def collect(bboxes, ctpn_bboxes, texts, logfile=sys.stdout):
     data = [
         {'bbox': bbox, 'text': text}
