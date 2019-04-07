@@ -52,71 +52,36 @@ parser = ArgumentParser()
 parser.add_argument('--path', required=True, type=str)
 args = parser.parse_args()
 
-def get_iou(_bb1, _bb2):
-    """
-    Calculate the Intersection over Union (IoU) of two bounding boxes.
+from utils import get_iou
 
-    Parameters
-    ----------
-    bb1 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x1, y1) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
-    bb2 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x, y) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
+class Strategy:
+    def __init__(self,
+            group_bbox_detector, unit_bbox_detector,
+            text_recognizer, translator, inpainter, image_renderer
+        ):
+        self.group_bbox_detector = group_bbox_detector
+        self.unit_bbox_detector = unit_bbox_detector
+        self.translator = translator
+        self.inpainter = inpainter
+        self.image_renderer = image_renderer
+        self.text_recognizer = text_recognizer
 
-    Returns
-    -------
-    float
-        in [0, 1]
-    """
+    def process(self, image):
+        # Collect first set of boxes.
 
-    bb1 = {
-        "x1": _bb1.x, "x2": _bb1.X,
-        "y1": _bb1.y, "y2": _bb1.Y,
-    }
+        group_boxes = self.group_bbox_detector(image)
+        unit_boxes = self.unit_bbox_detector(image)
+        texts = self.detect_texts(image, unit_boxes)
+        ds = self._collect(group_boxes, unit_boxes, texts)
 
-    bb2 = {
-        "x1": _bb2.x, "x2": _bb2.X,
-        "y1": _bb2.y, "y2": _bb2.Y,
-    }
+    def detect_texts(self, image, unit_boxes):
+        texts = []
+        for i, bbox in enumerate(unit_boxes):
+            cropped = image[bbox.y:bbox.Y, bbox.x:bbox.X, :]
+            text = crnnw.predict(cropped)
+            texts.append(text)
+        return texts
 
-    assert bb1['x1'] < bb1['x2']
-    assert bb1['y1'] < bb1['y2']
-    assert bb2['x1'] < bb2['x2']
-    assert bb2['y1'] < bb2['y2']
-
-    # determine the coordinates of the intersection rectangle
-    x_left = max(bb1['x1'], bb2['x1'])
-    y_top = max(bb1['y1'], bb2['y1'])
-    x_right = min(bb1['x2'], bb2['x2'])
-    y_bottom = min(bb1['y2'], bb2['y2'])
-
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
-
-    # The intersection of two axis-aligned bounding boxes is always an
-    # axis-aligned bounding box
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
-
-    # compute the area of both AABBs
-    bb1_area = (bb1['x2'] - bb1['x1']) * (bb1['y2'] - bb1['y1'])
-    bb2_area = (bb2['x2'] - bb2['x1']) * (bb2['y2'] - bb2['y1'])
-
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the interesection area
-    return intersection_area
-    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
-    assert iou >= 0.0
-    assert iou <= 1.0
-    return iou
-
-
-
-Annotation = namedtuple('Annotation', 'image bboxes')
 
 def collect(bboxes, ctpn_bboxes, texts, logfile=sys.stdout):
     data = [
@@ -219,7 +184,6 @@ def write_text(image, bbox, translation):
 # f(frame)
 
 capture = cv2.VideoCapture(args.path)
-
 counter = 1
 annotations = []
 while(capture.isOpened()):
