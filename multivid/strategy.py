@@ -45,18 +45,7 @@ class Strategy:
         groups = group(ctpn_bboxes, data)
         for _group in groups:
             _data = sorted(groups[_group], key=h)
-            # texts = list(map(lambda x: x['text'], _data))
-            # string = ' '.join(texts)
-            # output = translator(string, tgt_lang='hi')
-            # for line in output:
-            #     print('> ', line['src'], file=logfile)
-            #     print('< ', line['tgt'], file=logfile)
-            #     print('', file=logfile, flush=True)
-            #     translations[_group] = output
-            # # for datum in _data:
-            # #     bbox = datum['bbox']
-            # #     text = datum['text']
-            # #     print('{}:{}, {}:{} \t {}'.format(bbox.y, bbox.Y, bbox.x, bbox.X, text))
+            groups[_group] = _data
         return groups
 
 
@@ -69,7 +58,7 @@ class Strategy:
         for group_bbox, v in collected.items():
             # Fix this up.
             text = _prettify(v['texts'])
-            self.image_renderer(image, group_bbox, text)
+            image = self.image_renderer(image, group_bbox, text)
 
         return image
 

@@ -8,3 +8,6 @@ class ImageFontRenderer:
         draw = ImageDraw.Draw(image)
         draw.text((bbox.x, bbox.y), text, (0, 0, 0), font=self.font)
         return image
+
+if __name__ == '__main__':
+
