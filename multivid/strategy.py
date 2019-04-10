@@ -1,5 +1,7 @@
 import cv2            
+import numpy as np
 from .utils import get_iou
+from collections import defaultdict
 
 class Strategy:
     def __init__(self,
@@ -15,8 +17,8 @@ class Strategy:
         self.text_recognizer = text_recognizer
 
     def process(self, image):
-        group_boxes = self.group_bbox_detector.predict(image)
-        unit_boxes = self.unit_bbox_detector.predict(image)
+        _, group_boxes = self.group_bbox_detector.predict(image)
+        _, unit_boxes = self.unit_bbox_detector.predict(image)
         texts = self.detect_texts(image, unit_boxes)
         collected = self._collect(group_boxes, unit_boxes, texts)
         image = self._inpaint(image, collected)
@@ -51,13 +53,19 @@ class Strategy:
 
     def _translate(self, image, collected):
         def _prettify(text):
-            tgt_text = ' '.join(texts)
+            tgt_text = ' '.join(text)
             tgt_text = tgt_text.replace(' ', '')
             tgt_text = tgt_text.replace('▁', ' ')
+            return tgt_text
+
 
         for group_bbox, v in collected.items():
             # Fix this up.
-            text = _prettify(v['texts'])
+            texts = [t['text'] for t in v]
+            src_text = ' '.join(texts)
+            translation = self.translator(src_text, tgt_lang=self.tgt_lang)
+            tgt_text = translation[0]['tgt']
+            text = _prettify(tgt_text)
             image = self.image_renderer(image, group_bbox, text)
 
         return image
@@ -66,9 +74,8 @@ class Strategy:
     def _inpaint(self, image, collected):
         image_for_inpainting = image.copy()
 
+        mask = np.zeros_like(image_for_inpainting)
         for group_bbox, v in collected.items():
-            mask = np.zeros_like(image_for_inpainting)
-
             cv2.rectangle(
                     mask, 
                     (group_bbox.x, group_bbox.y), 
@@ -77,7 +84,8 @@ class Strategy:
                     thickness=cv2.FILLED
                 )
 
-            for bbox in v['units']:
+            for datum in v:
+                bbox = datum['bbox']
                 cv2.rectangle(
                         mask, 
                         (bbox.x, bbox.y), (bbox.X, bbox.Y), 
