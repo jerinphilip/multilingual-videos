@@ -85,25 +85,29 @@ class VideoPipe:
     def __init__(self, input_stream_path, f, output_prefix):
         self.input_stream_path = input_stream_path
         _, ext = os.path.splitext(self.input_stream_path)
-        self.output_stream_path = '{}.{}'.format(output_prefix, ext)
+        self.output_stream_path = '{}{}'.format(output_prefix, ext)
         self.f = f
         self._load()
 
     def _load(self):
         self.input_stream = cv2.VideoCapture(self.input_stream_path)
-
         fps = self.input_stream.get(cv2.CAP_PROP_FPS)
-        fps = int(fps)
+        # fps = int(fps)
 
         width = self.input_stream.get(cv2.CAP_PROP_FRAME_WIDTH)
         width = int(width)
         height = self.input_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        height = int(width)
+        height = int(height)
 
         fourcc = self.input_stream.get(cv2.CAP_PROP_FOURCC)
         fourcc = int(fourcc)
+        _fourcc = cv2.VideoWriter_fourcc(*"H264")
+        # print(fourcc, _fourcc)
+        fourcc  = _fourcc
+        # fourcc = -1
 
         shape = (width, height)
+        # shape = (height, width)
 
         print(fps, shape, fourcc)
         self.output_stream = cv2.VideoWriter(
@@ -125,8 +129,8 @@ class VideoPipe:
             print(frame_count, output_frame.shape)
             self.output_stream.write(output_frame)
 
-            if frame_count > 100:
-                break
+            # if frame_count > 100:
+            #     break
 
         self.output_stream.release()
         self.input_stream.release()
