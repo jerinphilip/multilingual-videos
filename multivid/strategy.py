@@ -16,6 +16,9 @@ class Strategy:
         self.image_renderer = image_renderer
         self.text_recognizer = text_recognizer
 
+    def __call__(self, image):
+        return self.process(image)
+
     def process(self, image):
         _, group_boxes = self.group_bbox_detector.predict(image)
         _, unit_boxes = self.unit_bbox_detector.predict(image)
